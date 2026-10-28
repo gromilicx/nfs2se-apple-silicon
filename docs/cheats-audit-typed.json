@@ -1,0 +1,1599 @@
+{
+  "schema_version": 1,
+  "audited_on": "2026-10-28",
+  "scope": "Original typed cheats in software-renderer NFS2SEN recompiled ARM64 build. Special held-key cheats are audited separately.",
+  "binary": "source/nfs-recompiled/nfs2se/nfs2sen.exe",
+  "binary_sha256": "746ef7a56346e11aaef6a89bf0b327f8789d69ee5948ac04b548405d4c1a56b5",
+  "sources": {
+    "handler": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp:16108",
+    "matcher": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp:17522",
+    "strings_table": "0x4bfe44",
+    "dispatch_table": "0x404db0",
+    "model_assets_table": "0x4c3df4 + model_id *8"
+  },
+  "global_guards": {
+    "input_character_nonzero": true,
+    "conditions": [
+      {
+        "address": "0x4dde89",
+        "width_bits": 8,
+        "operator": "in",
+        "value": [
+          0,
+          1
+        ],
+        "meaning": "local or split-screen communication mode"
+      },
+      {
+        "address": "0x4dde8a",
+        "width_bits": 8,
+        "operator": "==",
+        "value": 0,
+        "meaning": "single-race type"
+      }
+    ],
+    "source_addresses": [
+      "0x404dfc",
+      "0x404e04",
+      "0x404e17"
+    ],
+    "case_insensitive": true,
+    "encoding": "Stored string bytes are uppercase ASCII plus9; null terminator unencoded.",
+    "important": "The guide claim any screen is too broad. Normal keyboard event routing and these single-race/local guards still apply."
+  },
+  "activation_semantics": {
+    "retyping_toggles_effects": false,
+    "flag_lifetime": "Frontend flags stay set until reset by original flow or restart; race setup serializes them into command20 bitfield. Unsupported race/communication modes clear flags. Do not present original retyping as a toggle.",
+    "race_setup_function": "sub_406114",
+    "race_bits": {
+      "pioneer": "0x4",
+      "slip": "0x8",
+      "rain": "0x40",
+      "chase": "0x100",
+      "rushhour": "0x400",
+      "roadrage": "0x800",
+      "object_traffic_extra": "0x1000 when rushhour and override model>37 and traffic setting0"
+    },
+    "reset_evidence": [
+      "0x40616e..0x4061a8",
+      "sub_408340:0x408360..0x408396"
+    ],
+    "runtime_race_flags_address": "0x4dd2f8"
+  },
+  "typed_codes": [
+    {
+      "code": "fzr2000",
+      "canonical": "FZR2000",
+      "title": "FZR 2000",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x404e64",
+      "encoded_string_address": "0x4bfdc4",
+      "table_index": 0,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4dde9d",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 3
+        },
+        {
+          "address": "0x4dde9f",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 14
+        }
+      ],
+      "extra_guard": {
+        "address": "0x4dde9d",
+        "width_bits": 8,
+        "operator": "<",
+        "value": 3
+      },
+      "notes": "Only raises unlock and selects car when prior unlock byte is below3; entering again after unlock does not reselect it.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 16259
+    },
+    {
+      "code": "tombstone",
+      "canonical": "TOMBSTONE",
+      "title": "Daytona",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x404f88",
+      "encoded_string_address": "0x4bfdcc",
+      "table_index": 1,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4dde9f",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 13
+        },
+        {
+          "address": "0x4dde9d",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 2
+        }
+      ],
+      "extra_guard": {
+        "address": "0x4dde9d",
+        "width_bits": 8,
+        "operator": "<",
+        "value": 2
+      },
+      "notes": "Only changes state if bonus unlock byte is below2; otherwise no reselect.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 16677
+    },
+    {
+      "code": "bomber",
+      "canonical": "BOMBER",
+      "title": "Bomber BFS",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x404fc8",
+      "encoded_string_address": "0x4bfdd6",
+      "table_index": 2,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4dde9d",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "address": "0x4dde9f",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 12
+        }
+      ],
+      "extra_guard": {
+        "address": "0x4dde9d",
+        "width_bits": 8,
+        "operator": "<",
+        "value": 1
+      },
+      "notes": "Only changes state if bonus unlock byte is below1; otherwise no reselect.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 16751
+    },
+    {
+      "code": "hollywood",
+      "canonical": "HOLLYWOOD",
+      "title": "Monolithic Studios",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x405006",
+      "encoded_string_address": "0x4bfddd",
+      "table_index": 3,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4dde90",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 7
+        },
+        {
+          "address": "0x4dde9c",
+          "width_bits": 8,
+          "operation": "bitwise_or",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Unlocks track bit0, selects track7, calls sub_40ec80 to refresh frontend.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 16821
+    },
+    {
+      "code": "pioneer",
+      "canonical": "PIONEER",
+      "title": "Pioneer engine",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x405045",
+      "encoded_string_address": "0x4bfde7",
+      "table_index": 4,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4d2500",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Also calls sub_402ca0 with eax0x34a (frontend feedback). Race builder packs flag into bit0x4 of command20.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 16885
+    },
+    {
+      "code": "slip",
+      "canonical": "SLIP",
+      "title": "Slippery roads",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x40507d",
+      "encoded_string_address": "0x4bfdef",
+      "table_index": 5,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4d2514",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Forces every road-surface lookup to index9, whose grip coefficient is about0.6 in both driving-style tables. This is slippery-road physics, not a slow-motion/time-scale cheat.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 16945,
+      "semantic_evidence": {
+        "runtime_flag_address": "0x4dd2f8",
+        "runtime_bit": "0x8",
+        "branches": [
+          "sub_450b70:0x450b87->0x451316",
+          "sub_453840:0x45387e->0x4546dd"
+        ],
+        "normal_surface_table": "0x4c5840 contains 0..2",
+        "slip_surface_table": "0x4c5854 contains twenty bytes all9",
+        "car_surface_field": "car +0x200",
+        "grip_table": "0x4c57f0 (2 driving styles x10 DWORD 16.16 values)",
+        "grip_value_index9": "39321 /65536 =0.5999908447265625",
+        "grip_consumer": [
+          "0x4528ad..0x4528c5",
+          "0x452c72..0x452c83"
+        ]
+      }
+    },
+    {
+      "code": "slot",
+      "canonical": "SLOT",
+      "title": "Slot car option",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x4050ab",
+      "encoded_string_address": "0x4bfdf4",
+      "table_index": 6,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4dde9e",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "address": "0x4bfd90",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Unlocks slot option and requests frontend refresh. Actual slot car selection is a separate car-menu option, limited by driving style.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 16999
+    },
+    {
+      "code": "mad",
+      "canonical": "MAD",
+      "title": "Smoking cow tires (3Dfx only)",
+      "accepted": true,
+      "implemented_in_software_renderer": false,
+      "handler": "0x404e8a",
+      "encoded_string_address": "0x4bfdf9",
+      "table_index": 7,
+      "activation": "one_way_unlock_or_set",
+      "effects": [],
+      "extra_guard": null,
+      "notes": "String is recognized but jump table goes directly to common next-code branch0x404e8a. No state change or confirmation sound in this software executable.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 16290
+    },
+    {
+      "code": "rain",
+      "canonical": "RAIN",
+      "title": "Rain",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x4050e0",
+      "encoded_string_address": "0x4bfdfd",
+      "table_index": 8,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4d250c",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Rain-region logic is implemented only for runtime track IDs0,5,7, corresponding to frontend Proving Grounds, North Country and Mystic Peaks. Other tracks receive zero regions even though the rain flag is set. Rain varies by regions of supported tracks.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 17057,
+      "semantic_evidence": {
+        "runtime_flag_address": "0x4dd2f8",
+        "runtime_bit": "0x40",
+        "track_id_address": "0x4dd2fc",
+        "track_dispatch_tables": [
+          "0x473df0 (rain-region query)",
+          "0x473ee0 (rain-region initialization)"
+        ],
+        "region_query_handlers": [
+          "0x473e35",
+          "0x473eb0 (zero result)"
+        ],
+        "region_init_handlers": {
+          "0": "0x473f21",
+          "5": "0x473f8e",
+          "7": "0x474074",
+          "others": "0x474131 (sets region count0)"
+        },
+        "frontend_to_runtime_table": "0x4060cc = [0,2,4,5,3,6,7,8]",
+        "runtime_to_frontend_table": "0x41a310 = [0,0,1,4,2,3,5,6,7]",
+        "frontend_tracks": [
+          {
+            "id": 0,
+            "asset": "oval",
+            "title": "Proving Grounds"
+          },
+          {
+            "id": 3,
+            "asset": "nort",
+            "title": "North Country"
+          },
+          {
+            "id": 6,
+            "asset": "myst",
+            "title": "Mystic Peaks"
+          }
+        ]
+      }
+    },
+    {
+      "code": "chase",
+      "canonical": "CHASE",
+      "title": "Chase mode",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x40510d",
+      "encoded_string_address": "0x4bfe02",
+      "table_index": 9,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4d24f8",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Race builder packs flag into bit0x100 of command20.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 17109
+    },
+    {
+      "code": "kcjones",
+      "canonical": "KCJONES",
+      "title": "Multicolor car and horizon (3Dfx only)",
+      "accepted": true,
+      "implemented_in_software_renderer": false,
+      "handler": "0x404e8a",
+      "encoded_string_address": "0x4bfe08",
+      "table_index": 10,
+      "activation": "one_way_unlock_or_set",
+      "effects": [],
+      "extra_guard": null,
+      "notes": "String is recognized but dispatch is same no-op as MAD in this software executable. 3Dfx-only effect cannot be enabled here by retyping it.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 16290
+    },
+    {
+      "code": "rushhour",
+      "canonical": "RUSHHOUR",
+      "title": "Increased traffic",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x40513b",
+      "encoded_string_address": "0x4bfe10",
+      "table_index": 11,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4d2504",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Adds traffic when allowed by race settings. With a model override, traffic uses selected override.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 17163
+    },
+    {
+      "code": "rexhour",
+      "canonical": "REXHOUR",
+      "title": "Dinosaur traffic",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x405169",
+      "encoded_string_address": "0x4bfe19",
+      "table_index": 12,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 43
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 43
+        },
+        {
+          "address": "0x4d2504",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Actual table string is REXHOUR. Screenshot REXRAGE is not accepted.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 17217
+    },
+    {
+      "code": "madland",
+      "canonical": "MADLAND",
+      "title": "Wooden-outhouse traffic and Pioneer engine",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x4051a5",
+      "encoded_string_address": "0x4bfe21",
+      "table_index": 13,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4d2500",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "address": "0x4d2504",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 42
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 42
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Screenshot description Different colors is inconsistent with this executable: direct handler enables Pioneer engine, rush-hour traffic and selects model42 (OUTH), not a color flag.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 17277
+    },
+    {
+      "code": "schoolzone",
+      "canonical": "SCHOOLZONE",
+      "title": "School bus traffic and Pioneer engine",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x4051e7",
+      "encoded_string_address": "0x4bfe29",
+      "table_index": 14,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4d2500",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4d2504",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Affects player and opponent overrides as well as traffic, because both override bytes are set.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 17339
+    },
+    {
+      "code": "vip",
+      "canonical": "VIP",
+      "title": "Limousine traffic and Pioneer engine",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x405227",
+      "encoded_string_address": "0x4bfe34",
+      "table_index": 15,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4d2500",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 35
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 35
+        },
+        {
+          "address": "0x4d2504",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Affects player and opponent overrides as well as traffic, because both override bytes are set.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 17401
+    },
+    {
+      "code": "roadrage",
+      "canonical": "ROADRAGE",
+      "title": "Crash opponents with the horn",
+      "accepted": true,
+      "implemented_in_software_renderer": true,
+      "handler": "0x405269",
+      "encoded_string_address": "0x4bfe38",
+      "table_index": 16,
+      "activation": "one_way_unlock_or_set",
+      "effects": [
+        {
+          "address": "0x4d2510",
+          "width_bits": 32,
+          "operation": "set",
+          "value": 1
+        }
+      ],
+      "extra_guard": null,
+      "notes": "Race builder packs flag into bit0x800 of command20.",
+      "verification": "static original handler and PE table audit; physical effect not visually tested",
+      "source_file": "source/nfs-recompiled/src/nfs2se/disassembly/nfs2se.0.cpp",
+      "source_line": 17463
+    }
+  ],
+  "unsupported_requested_codes": [
+    {
+      "code": "rexrage",
+      "accepted": false,
+      "replacement": "rexhour",
+      "reason": "Absent from decoded table; actual dinosaur-traffic code is REXHOUR."
+    },
+    {
+      "code": "red racer",
+      "accepted": false,
+      "replacement": null,
+      "reason": "Absent from all17 typed strings and GO parser. Ford Indigo is base car ID4 in SE; choose it in car selection."
+    }
+  ],
+  "go_codes": [
+    {
+      "code": "go18",
+      "number": 18,
+      "accepted": true,
+      "model_id": 20,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        }
+      ],
+      "parser_alias_of": "go20",
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go19",
+      "number": 19,
+      "accepted": true,
+      "model_id": 19,
+      "model_asset": "COMC",
+      "title": "Pickup",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 19
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 19
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go20",
+      "number": 20,
+      "accepted": true,
+      "model_id": 20,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go21",
+      "number": 21,
+      "accepted": true,
+      "model_id": 21,
+      "model_asset": "SEMI",
+      "title": "Truck",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 21
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 21
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go22",
+      "number": 22,
+      "accepted": true,
+      "model_id": 20,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        }
+      ],
+      "parser_alias_of": "go20",
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go23",
+      "number": 23,
+      "accepted": true,
+      "model_id": 23,
+      "model_asset": "QUAT",
+      "title": "Blue Audi sedan",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 23
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 23
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go24",
+      "number": 24,
+      "accepted": true,
+      "model_id": 20,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        }
+      ],
+      "parser_alias_of": "go20",
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go25",
+      "number": 25,
+      "accepted": true,
+      "model_id": 20,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        }
+      ],
+      "parser_alias_of": "go20",
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go26",
+      "number": 26,
+      "accepted": true,
+      "model_id": 26,
+      "model_asset": "MERC",
+      "title": "Mercedes",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 26
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 26
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go27",
+      "number": 27,
+      "accepted": true,
+      "model_id": 27,
+      "model_asset": "VWFB",
+      "title": "Green Volkswagen",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 27
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 27
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go28",
+      "number": 28,
+      "accepted": true,
+      "model_id": 28,
+      "model_asset": "MIAT",
+      "title": "Grey Mazda convertible",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 28
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 28
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go29",
+      "number": 29,
+      "accepted": true,
+      "model_id": 20,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        }
+      ],
+      "parser_alias_of": "go20",
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go30",
+      "number": 30,
+      "accepted": true,
+      "model_id": 20,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        }
+      ],
+      "parser_alias_of": "go20",
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go31",
+      "number": 31,
+      "accepted": true,
+      "model_id": 31,
+      "model_asset": "ARMY",
+      "title": "Army Unimog",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 31
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 31
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go32",
+      "number": 32,
+      "accepted": true,
+      "model_id": 20,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 20
+        }
+      ],
+      "parser_alias_of": "go20",
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go33",
+      "number": 33,
+      "accepted": true,
+      "model_id": 33,
+      "model_asset": "SNOW",
+      "title": "Snow truck",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 33
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 33
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go34",
+      "number": 34,
+      "accepted": true,
+      "model_id": 34,
+      "model_asset": "mono",
+      "title": "Monolithic tram",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 34
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 34
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go35",
+      "number": 35,
+      "accepted": true,
+      "model_id": 35,
+      "model_asset": "limo",
+      "title": "Limousine",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 35
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 35
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go36",
+      "number": 36,
+      "accepted": true,
+      "model_id": 36,
+      "model_asset": "MIAT",
+      "title": "Grey Mazda convertible",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 36
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 36
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": "go28",
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go37",
+      "number": 37,
+      "accepted": true,
+      "model_id": 37,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 37
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 37
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": "go20",
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go38",
+      "number": 38,
+      "accepted": true,
+      "model_id": 38,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 38
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 38
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": "go20",
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go39",
+      "number": 39,
+      "accepted": true,
+      "model_id": 39,
+      "model_asset": "SBUS",
+      "title": "School bus",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 39
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 39
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": "go20",
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go40",
+      "number": 40,
+      "accepted": true,
+      "model_id": 40,
+      "model_asset": "CRAT",
+      "title": "Crate",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 40
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 40
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go41",
+      "number": 41,
+      "accepted": true,
+      "model_id": 41,
+      "model_asset": "CART",
+      "title": "Hand cart",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 41
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 41
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go42",
+      "number": 42,
+      "accepted": true,
+      "model_id": 42,
+      "model_asset": "OUTH",
+      "title": "Wooden outhouse",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 42
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 42
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go43",
+      "number": 43,
+      "accepted": true,
+      "model_id": 43,
+      "model_asset": "TREX",
+      "title": "Tyrannosaurus Rex",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 43
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 43
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go44",
+      "number": 44,
+      "accepted": true,
+      "model_id": 44,
+      "model_asset": "WAGO",
+      "title": "Wild West wagon",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 44
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 44
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go45",
+      "number": 45,
+      "accepted": true,
+      "model_id": 45,
+      "model_asset": "SOU1",
+      "title": "Souvenir stand1",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 45
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 45
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go46",
+      "number": 46,
+      "accepted": true,
+      "model_id": 46,
+      "model_asset": "SOU2",
+      "title": "Souvenir stand2",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 46
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 46
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go47",
+      "number": 47,
+      "accepted": true,
+      "model_id": 47,
+      "model_asset": "SOU3",
+      "title": "News stand",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 47
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 47
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go48",
+      "number": 48,
+      "accepted": true,
+      "model_id": 48,
+      "model_asset": "LOG",
+      "title": "Log",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 48
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 48
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go49",
+      "number": 49,
+      "accepted": true,
+      "model_id": 49,
+      "model_asset": "BOX",
+      "title": "Box",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 49
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 49
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go50",
+      "number": 50,
+      "accepted": true,
+      "model_id": 50,
+      "model_asset": "BEER",
+      "title": "Beer box",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 50
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 50
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    },
+    {
+      "code": "go51",
+      "number": 51,
+      "accepted": true,
+      "model_id": 51,
+      "model_asset": "RUIN",
+      "title": "Rock",
+      "effects": [
+        {
+          "address": "0x4bfcdc",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 51
+        },
+        {
+          "address": "0x4bfcdd",
+          "width_bits": 8,
+          "operation": "set",
+          "value": 51
+        }
+      ],
+      "parser_alias_of": null,
+      "asset_alias_of": null,
+      "activation": "one_way_model_override",
+      "verification": "accepted range/remap, resulting state writes and model asset code audited statically; descriptive object label based on guide and asset abbreviation"
+    }
+  ],
+  "go_groups": [
+    {
+      "title": "School bus",
+      "codes": [
+        "go18",
+        "go20",
+        "go22",
+        "go24",
+        "go25",
+        "go29",
+        "go30",
+        "go32",
+        "go37",
+        "go38",
+        "go39"
+      ],
+      "note": "First8 map to model20 in parser;37..39 retain own IDs but point to SBUS asset."
+    },
+    {
+      "title": "Grey convertible",
+      "codes": [
+        "go28",
+        "go36"
+      ],
+      "note": "Different IDs use MIAT asset."
+    }
+  ],
+  "go_semantics": {
+    "parser": "sub_404df4:0x404ea1..0x404f83",
+    "allowed_min": 18,
+    "allowed_max": 51,
+    "exactly_two_digits": true,
+    "writes": "Both player-car override0x4bfcdc and second/opponent-car override0x4bfcdd. It does not itself enable rushhour.",
+    "traffic_interaction": "When rushhour enabled, race builder also uses player override to populate traffic.",
+    "front_end_preview": "Frontend selected-car byte0x4dde9f is unchanged. Next race uses override even if original menu preview displays ordinary car."
+  },
+  "remaining_semantic_checks": [
+    "Physical appearance and driving behavior of every model/effect has not been visually tested.",
+    "Some descriptive civilian/object labels follow the supplied guide and asset abbreviations; accepted codes, IDs and asset codes are directly verified."
+  ],
+  "guide_corrections": [
+    {
+      "claim": "SLIP = slow motion",
+      "finding": "SLIP changes surface grip to about60%; no timing change in its consumers."
+    },
+    {
+      "claim": "REXRAGE = dinosaur traffic",
+      "finding": "Exact accepted string is REXHOUR; REXRAGE is absent."
+    },
+    {
+      "claim": "RED RACER = Ford Indigo",
+      "finding": "No such string in this SE executable; Ford Indigo is base car ID4."
+    },
+    {
+      "claim": "MADLAND = different colors",
+      "finding": "Direct handler sets Pioneer engine, traffic flag, player/opponent model42 (wooden outhouse)."
+    },
+    {
+      "claim": "RAIN only on Proving Grounds and Mystic Peaks",
+      "finding": "Rain-region logic also supports North Country, runtime track ID5."
+    },
+    {
+      "claim": "GO37/38/39 also school bus",
+      "finding": "Correct asset effect, but parser preserves their IDs and model lookup returns SBUS, unlike explicit aliases mapped to20."
+    },
+    {
+      "claim": "Codes can be entered at any screen",
+      "finding": "Original recognizer requires local/split-screen communication and single-race type, plus keyboard routing."
+    },
+    {
+      "claim": "MAD and KCJONES should work in this build",
+      "finding": "Strings exist but dispatch is no-op in software executable; associated effects require3Dfx renderer."
+    }
+  ]
+}

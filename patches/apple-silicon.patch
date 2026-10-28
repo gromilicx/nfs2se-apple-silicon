@@ -1,0 +1,919 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index fc620c2..721494b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,5 +1,15 @@
+ cmake_minimum_required(VERSION 3.15)
+ project(nfs_recompiled LANGUAGES C CXX ASM)
++set(CMAKE_CXX_STANDARD 17)
++set(CMAKE_CXX_STANDARD_REQUIRED ON)
++set(CMAKE_OBJCXX_STANDARD 17)
++set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
++
++# Apple's compatibility OpenGL profile supports this legacy renderer.
++if(APPLE)
++    add_compile_definitions(GL_SILENCE_DEPRECATION)
++    enable_language(OBJCXX)
++endif()
+ 
+ # options
+ option(WITH_PEDANTIC_FPU "Compile pedantic FPU implementation" OFF)
+@@ -91,6 +101,10 @@ if(WITH_PEDANTIC_FPU AND TARGET_WINDOWS)
+         "relies on Linux-specific 80-bit long double ABI conventions.")
+ endif()
+ 
++if(WITH_PEDANTIC_FPU AND (APPLE OR NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$"))
++    message(FATAL_ERROR "The NASM pedantic FPU requires Linux x86_64; use WITH_PEDANTIC_FPU=OFF on macOS/ARM.")
++endif()
++
+ if(WITH_PEDANTIC_FPU AND NOT TARGET_WINDOWS)
+     set(X87_OBJ "${CMAKE_CURRENT_BINARY_DIR}/x87.o")
+     add_custom_command(
+@@ -132,6 +146,11 @@ function(add_game_exe name)
+     # adding the headers to the executable source list is what makes CMake
+     # aware that the custom command must run before compilation starts.
+     add_executable(${name} ${GAME_SOURCES} ${DISASM_SOURCES} ${DISASM_HEADERS})
++    if(APPLE AND name STREQUAL "nfs2se")
++        target_sources(${name} PRIVATE "${game_src_dir}/cheats_macos.mm")
++        set_source_files_properties("${game_src_dir}/cheats_macos.mm" PROPERTIES COMPILE_FLAGS "-fobjc-arc")
++        target_link_libraries(${name} PRIVATE "-framework AppKit")
++    endif()
+     set_source_files_properties(${DISASM_HEADERS} PROPERTIES HEADER_FILE_ONLY TRUE)
+     target_include_directories(${name} PRIVATE
+         ${game_src_dir}
+@@ -147,4 +166,4 @@ function(add_game_exe name)
+ endfunction()
+ 
+ add_game_exe(nfs2se)
+-add_game_exe(nfs3hp)
+\ No newline at end of file
++add_game_exe(nfs3hp)
+diff --git a/include/lib/gamepad.h b/include/lib/gamepad.h
+index 2901e9e..a3308ea 100644
+--- a/include/lib/gamepad.h
++++ b/include/lib/gamepad.h
+@@ -3,6 +3,7 @@
+ 
+ #include <lib/winapp.h>
+ #include <SDL3/SDL.h>
++#include <deque>
+ 
+ 
+ namespace win32
+@@ -29,6 +30,41 @@ class Keyboard : public Input
+ 
+ class Mouse : public Input
+ {
++public:
++    Mouse();
++    ~Mouse();
++
++    x86::reg32 getButtonCount() const override;
++    x86::reg32 getAxesCount() const override;
++
++    struct State
++    {
++        x86::sreg32 x, y, z;
++        x86::reg8 buttons[8];
++    };
++    State getState();
++    x86::reg32 getBufferedData(x86::reg32 objectSize, void* data,
++                               x86::reg32& count, bool peek);
++
++private:
++    struct BufferedEvent
++    {
++        x86::reg32 offset, data, timestamp, sequence, appData;
++    };
++    static bool SDLCALL watchEvent(void* userdata, SDL_Event* event);
++    void appendEvent(x86::reg32 offset, x86::sreg32 data, Uint64 timestamp);
++    void updateScale(SDL_WindowID windowID);
++
++    SDL_Mutex* m_mutex;
++    std::deque<BufferedEvent> m_events;
++    x86::reg32 m_sequence = 0;
++    x86::reg32 m_readCount = 0;
++    bool m_overflow = false;
++    float m_scaleX = 0.8f;
++    float m_scaleY = 0.8f;
++    double m_fractionX = 0, m_fractionY = 0, m_fractionZ = 0;
++    x86::sreg64 m_deltaX = 0, m_deltaY = 0, m_deltaZ = 0;
++    x86::reg8 m_buttons[8] = {};
+ };
+ 
+ struct GamepadState
+diff --git a/include/lib/renderer.h b/include/lib/renderer.h
+index 01c3ccc..92d0bc0 100644
+--- a/include/lib/renderer.h
++++ b/include/lib/renderer.h
+@@ -38,6 +38,7 @@ private: // friend class GlideRenderer
+     void clearCurrent();
+ 
+ private:
++    void initialize();
+     void update();
+     x86::reg32 getFrontBuffer() const;
+     x86::reg32 getBackBuffer() const;
+diff --git a/include/mmx.h b/include/mmx.h
+index b8d19ae..975064c 100644
+--- a/include/mmx.h
++++ b/include/mmx.h
+@@ -3,7 +3,19 @@
+ 
+ #include <x86.h>
+ //#include <intrin.h>
+-#include <immintrin.h>
++#if defined(__aarch64__) || defined(_M_ARM64)
++// Preserve the translated game's MMX/SSE operations using native Arm NEON.
++# if defined(__clang__) || defined(__GNUC__)
++#  pragma GCC diagnostic push
++#  pragma GCC diagnostic ignored "-Wunused-parameter"
++# endif
++# include <third_party/sse2neon.h>
++# if defined(__clang__) || defined(__GNUC__)
++#  pragma GCC diagnostic pop
++# endif
++#else
++# include <immintrin.h>
++#endif
+ 
+ namespace x86
+ {
+diff --git a/include/winapi/wsock32.h b/include/winapi/wsock32.h
+index c5720bf..e5d39f9 100644
+--- a/include/winapi/wsock32.h
++++ b/include/winapi/wsock32.h
+@@ -73,8 +73,8 @@ int getsockname(WinApplication* app, x86::CPU& cpu,
+                 SOCKET s, sockaddr* name, int *namelen);
+ int bind(WinApplication* app, x86::CPU& cpu,
+          SOCKET s, const sockaddr* name, int namelen);
+-unsigned short htons(WinApplication* app, x86::CPU& cpu, unsigned short hostshort);
+-unsigned short ntohs(WinApplication* app, x86::CPU& cpu, unsigned short netshort);
++unsigned short (htons)(WinApplication* app, x86::CPU& cpu, unsigned short hostshort);
++unsigned short (ntohs)(WinApplication* app, x86::CPU& cpu, unsigned short netshort);
+ unsigned long inet_addr(WinApplication* app, x86::CPU& cpu, const char *cp);
+ Packed<char> inet_ntoa(WinApplication* app, x86::CPU& cpu, x86::reg32 in);
+ int setsockopt(WinApplication* app, x86::CPU& cpu,
+diff --git a/include/x86.h b/include/x86.h
+index 62e2f67..8721cd0 100644
+--- a/include/x86.h
++++ b/include/x86.h
+@@ -3,15 +3,27 @@
+ 
+ #include    <cstdint>
+ #include    <cstdlib>
++#include    <cstdio>
+ 
+ #ifdef _MSC_VER
+ # define __restrict__ __restrict
+-# define NFS2_ASSERT(x)         \
+-    if (! (x)) __debugbreak()
++# define NFS2_TRAP() __debugbreak()
++#elif defined(__clang__) || defined(__GNUC__)
++# define NFS2_TRAP() __builtin_trap()
+ #else
+-# define NFS2_ASSERT(x)         \
+-    if (! (x)) asm("int3")
++# define NFS2_TRAP() std::abort()
+ #endif
++#define NFS2_ASSERT(x)                                                      \
++    do                                                                     \
++    {                                                                      \
++        if (!(x))                                                          \
++        {                                                                  \
++            std::fprintf(stderr, "NFS assertion failed: %s (%s:%d)\n",       \
++                         #x, __FILE__, __LINE__);                           \
++            std::fflush(stderr);                                           \
++            NFS2_TRAP();                                                    \
++        }                                                                  \
++    } while (false)
+ #define NFS2_USE(x)             \
+     (void)x
+ 
+diff --git a/src/lib/memmap.cpp b/src/lib/memmap.cpp
+index 3da9c80..fd311ff 100644
+--- a/src/lib/memmap.cpp
++++ b/src/lib/memmap.cpp
+@@ -29,7 +29,15 @@ static void* alloc(x86::reg32 size)
+ #ifdef _WIN32
+     return VirtualAlloc(0, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+ #else
+-    void* p = mmap(nullptr, size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
++    // The guest allocator uses 4 KiB blocks, but Apple Silicon host pages
++    // are 16 KiB. Protecting/freeing one guest block would affect its live
++    // neighbours. Keep the private guest arena writable on macOS instead.
++#ifdef __APPLE__
++    const int protection = PROT_READ | PROT_WRITE;
++#else
++    const int protection = PROT_NONE;
++#endif
++    void* p = mmap(nullptr, size, protection, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+     NFS2_ASSERT(p != MAP_FAILED);
+     return p;
+ #endif
+@@ -47,7 +55,7 @@ static void dealloc(void* mem, x86::reg32 size)
+ 
+ static void protect(void* mem, x86::reg32 size, bool read, bool write)
+ {
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__APPLE__)
+     NFS2_USE(mem);
+     NFS2_USE(size);
+     NFS2_USE(read);
+@@ -91,6 +99,7 @@ MemMap::MemMap(x86::reg32 size)
+             break;
+         }
+     }
++    NFS2_ASSERT(m_block != x86::reg32(-1));
+     for (x86::reg32 s = m_block; s < m_block + m_blockCount; ++s)
+     {
+         s_blocks[s] = 1;
+@@ -98,7 +107,6 @@ MemMap::MemMap(x86::reg32 size)
+     s_memMaps.push_back(this);
+     s_lock->unlock();
+     protect(s_memory + s_sectionSize + s_blockSize + m_block * 4096, m_blockCount*4096, true, true);
+-    NFS2_ASSERT(m_block != x86::reg32(-1));
+ }
+ 
+ MemMap::~MemMap()
+@@ -177,13 +185,14 @@ void MemMap::fini()
+         delete *it;
+     }
+     NFS2_ASSERT(s_memMaps.empty());
++    dealloc(s_memory, s_simulatedMemory + s_blockSize + s_sectionSize);
++    s_memory = nullptr;
+     s_blocks = nullptr;
+     s_blockCount = 0;
+     s_blockSize = 0;
+     s_addressOffset = 0;
+     delete s_lock;
+     s_lock = nullptr;
+-    dealloc(s_memory, s_simulatedMemory + s_blockSize + s_sectionSize);
+ }
+ 
+ void MemMap::fillDebugGraph(x86::reg16* graph)
+diff --git a/src/lib/renderer.cpp b/src/lib/renderer.cpp
+index c97252c..5395122 100644
+--- a/src/lib/renderer.cpp
++++ b/src/lib/renderer.cpp
+@@ -3,7 +3,6 @@
+ #include <lib/gamepad.h>
+ #include <SDL3/SDL.h>
+ #include <SDL3/SDL_opengl.h>
+-#include <GL/gl.h>
+ 
+ namespace win32
+ {
+@@ -20,12 +19,25 @@ PFNGLDEBUGMESSAGECALLBACKPROC glDebugMessageCallback;
+ Renderer::Renderer(WinApplication* application, Window *window)
+     :   m_application(application)
+     ,   m_window(window)
+-    ,   m_renderer(SDL_GL_CreateContext(m_window->m_window))
++    ,   m_renderer(nullptr)
+     ,   m_videoMemory(new MemMap(800*600*2*2)) // double buffer 16 bits 800x600
+     ,   m_currentBuffer(0)
+     ,   m_depth(16)
+     ,   m_colorPalette()
+ {
++#ifdef __APPLE__
++    NFS2_ASSERT(SDL_RunOnMainThread([](void* data) {
++        static_cast<Renderer*>(data)->initialize();
++    }, this, true));
++#else
++    initialize();
++#endif
++}
++
++void Renderer::initialize()
++{
++    m_renderer = SDL_GL_CreateContext(m_window->m_window);
++    NFS2_ASSERT(m_renderer);
+     setCurrent();
+     SDL_GL_SetSwapInterval(1);
+     glDebugMessageCallback = (PFNGLDEBUGMESSAGECALLBACKPROC)SDL_GL_GetProcAddress("glDebugMessageCallback");
+@@ -44,7 +56,14 @@ Renderer::Renderer(WinApplication* application, Window *window)
+ 
+ Renderer::~Renderer()
+ {
++#ifdef __APPLE__
++    NFS2_ASSERT(SDL_RunOnMainThread([](void* data) {
++        auto* renderer = static_cast<Renderer*>(data);
++        SDL_GL_DestroyContext(static_cast<SDL_GLContext>(renderer->m_renderer));
++    }, this, true));
++#else
+     SDL_GL_DestroyContext(static_cast<SDL_GLContext>(m_renderer));
++#endif
+ }
+ 
+ void Renderer::setCurrent()
+@@ -59,6 +78,17 @@ void Renderer::clearCurrent()
+ 
+ void Renderer::setVideoMode(x86::reg32 w, x86::reg32 h, x86::reg32 bpp)
+ {
++#ifdef __APPLE__
++    if (!SDL_IsMainThread())
++    {
++        struct Request { Renderer* renderer; x86::reg32 w, h, bpp; } request{this, w, h, bpp};
++        NFS2_ASSERT(SDL_RunOnMainThread([](void* data) {
++            auto* request = static_cast<Request*>(data);
++            request->renderer->setVideoMode(request->w, request->h, request->bpp);
++        }, &request, true));
++        return;
++    }
++#endif
+     m_width = w;
+     m_height = h;
+     m_depth = bpp;
+@@ -173,6 +203,17 @@ x86::reg32 Renderer::lock(x86::reg32 index)
+ 
+ void Renderer::unlock(x86::reg32 index)
+ {
++#ifdef __APPLE__
++    if (!SDL_IsMainThread())
++    {
++        struct Request { Renderer* renderer; x86::reg32 index; } request{this, index};
++        NFS2_ASSERT(SDL_RunOnMainThread([](void* data) {
++            auto* request = static_cast<Request*>(data);
++            request->renderer->unlock(request->index);
++        }, &request, true));
++        return;
++    }
++#endif
+     if (index == 0)
+     {
+         setCurrent();
+@@ -184,6 +225,15 @@ void Renderer::unlock(x86::reg32 index)
+ 
+ void Renderer::swap()
+ {
++#ifdef __APPLE__
++    if (!SDL_IsMainThread())
++    {
++        NFS2_ASSERT(SDL_RunOnMainThread([](void* data) {
++            static_cast<Renderer*>(data)->swap();
++        }, this, true));
++        return;
++    }
++#endif
+     setCurrent();
+     const SDL_DisplayMode* mode = SDL_GetCurrentDisplayMode(SDL_GetPrimaryDisplay());
+     SDL_GL_SetSwapInterval(1);
+diff --git a/src/lib/sdl-backend/gamepad.cpp b/src/lib/sdl-backend/gamepad.cpp
+index 6b502c7..1091891 100644
+--- a/src/lib/sdl-backend/gamepad.cpp
++++ b/src/lib/sdl-backend/gamepad.cpp
+@@ -1,5 +1,6 @@
+ #include <lib/gamepad.h>
+ #include <SDL3/SDL.h>
++#include <algorithm>
+ #include <cstring>
+ 
+ 
+@@ -26,7 +27,7 @@ void Gamepad::updateKeys()
+         {
+             GamepadState state = s_gp1->getState();
+             SDL_Event event;
+-            for (x86::reg32 axis = 0; axis < 10; ++axis)
++            for (x86::reg32 axis = 0; axis < sizeof(state.axes) / sizeof(state.axes[0]); ++axis)
+             {
+                 if (state.axes[axis] != s_state.axes[axis])
+                 {
+@@ -37,9 +38,9 @@ void Gamepad::updateKeys()
+                     SDL_PushEvent(&event);
+                 }
+             }
+-            for (x86::reg32 button = 0; button < 64; ++button)
++            for (x86::reg32 button = 0; button < sizeof(state.buttons) * 8; ++button)
+             {
+-                x86::reg64 bMask = 1ll << button;
++                x86::reg64 bMask = x86::reg64{1} << button;
+                 if ((s_state.buttons & bMask) != (state.buttons & bMask))
+                 {
+                     event.type = state.buttons & bMask ? SDL_EVENT_JOYSTICK_BUTTON_DOWN : SDL_EVENT_JOYSTICK_BUTTON_UP;
+@@ -54,9 +55,9 @@ void Gamepad::updateKeys()
+         else
+         {
+             SDL_Event event;
+-            for (x86::reg32 button = 0; button < 64; ++button)
++            for (x86::reg32 button = 0; button < sizeof(s_state.buttons) * 8; ++button)
+             {
+-                x86::reg64 bMask = 1ll << button;
++                x86::reg64 bMask = x86::reg64{1} << button;
+                 if ((s_state.buttons & bMask))
+                 {
+                     event.type = SDL_EVENT_JOYSTICK_BUTTON_UP;
+@@ -87,7 +88,7 @@ Gamepad::Gamepad(x86::reg32 gamepadIndex)
+ {
+     int count = 0;
+     SDL_JoystickID *ids = SDL_GetJoysticks(&count);
+-    if (ids && (int)gamepadIndex < count)
++    if (ids && gamepadIndex < static_cast<x86::reg32>(std::max(count, 0)))
+         m_joystick = SDL_OpenJoystick(ids[gamepadIndex]);
+     SDL_free(ids);
+     SDL_SetJoystickEventsEnabled(false);
+@@ -97,7 +98,7 @@ Gamepad::Gamepad(x86::reg32 gamepadIndex)
+ 
+ Gamepad::~Gamepad()
+ {
+-    if (s_gp1)
++    if (s_gp1 == this)
+         s_gp1 = nullptr;
+     SDL_CloseJoystick(m_joystick);
+ }
+@@ -112,12 +113,18 @@ x86::reg32 Gamepad::getCount()
+ 
+ x86::reg32 Gamepad::getButtonCount() const
+ {
+-    return SDL_GetNumJoystickButtons(m_joystick);
++    if (!m_joystick)
++        return 0;
++    const int capacity = sizeof(GamepadState::buttons) * 8;
++    return static_cast<x86::reg32>(std::clamp(SDL_GetNumJoystickButtons(m_joystick), 0, capacity));
+ }
+ 
+ x86::reg32 Gamepad::getAxesCount() const
+ {
+-    return SDL_GetNumJoystickAxes(m_joystick);
++    if (!m_joystick)
++        return 0;
++    const int capacity = sizeof(GamepadState::axes) / sizeof(x86::sreg16);
++    return static_cast<x86::reg32>(std::clamp(SDL_GetNumJoystickAxes(m_joystick), 0, capacity));
+ }
+ 
+ GamepadState Gamepad::getState() const
+@@ -126,7 +133,8 @@ GamepadState Gamepad::getState() const
+     memset(&result, 0, sizeof(result));
+     for (x86::reg32 button = 0; button < getButtonCount(); ++button)
+     {
+-        result.buttons |= (SDL_GetJoystickButton(m_joystick, button) ? 1 : 0) << button;
++        if (SDL_GetJoystickButton(m_joystick, button))
++            result.buttons |= x86::reg64{1} << button;
+     }
+     for (x86::reg32 axis = 0; axis < getAxesCount(); ++axis)
+     {
+diff --git a/src/lib/socket.cpp b/src/lib/socket.cpp
+index 5c8df44..ab605c5 100644
+--- a/src/lib/socket.cpp
++++ b/src/lib/socket.cpp
+@@ -27,7 +27,7 @@ x86::reg32 Socket::bind(x86::reg32 /*network*/, x86::reg64 /*node*/, x86::reg16
+ x86::reg32 Socket::netToA(WinApplication* app, x86::reg32 address)
+ {
+     char* buffer = &app->getMemory<char>(s_netToABuffer->getBlockStart());
+-    sprintf(buffer, "%d.%d.%d.%d", address & 0xff, (address >> 8) & 0xff, (address >> 16) & 0xff, address >> 24);
++    snprintf(buffer, s_netToABuffer->getBlockSize(), "%u.%u.%u.%u", address & 0xff, (address >> 8) & 0xff, (address >> 16) & 0xff, address >> 24);
+     return s_netToABuffer->getBlockStart();
+ }
+ 
+diff --git a/src/lib/winapi/dinput/idirectinputdevice.cpp b/src/lib/winapi/dinput/idirectinputdevice.cpp
+index a454a84..3914ed4 100644
+--- a/src/lib/winapi/dinput/idirectinputdevice.cpp
++++ b/src/lib/winapi/dinput/idirectinputdevice.cpp
+@@ -178,8 +178,15 @@ HRESULT IDirectInputDevice::GetDeviceState(WinApplication* app, x86::CPU& cpu,
+     NFS2_USE(lpvData);
+     app->unlockContext(cpu);
+     Gamepad* gamepad = dynamic_cast<Gamepad*>(m_resource);
++    Mouse* mouse = dynamic_cast<Mouse*>(m_resource);
+     memset(lpvData, 0, cbData);
+-    if (gamepad)
++    if (mouse)
++    {
++        NFS2_ASSERT(cbData == 16 || cbData == sizeof(Mouse::State));
++        Mouse::State state = mouse->getState();
++        memcpy(lpvData, &state, cbData);
++    }
++    else if (gamepad)
+     {
+         NFS2_ASSERT(cbData == sizeof(DIJOYSTATE));
+         DIJOYSTATE* state = reinterpret_cast<DIJOYSTATE*>(lpvData);
+@@ -208,13 +215,13 @@ HRESULT IDirectInputDevice::GetDeviceData(WinApplication* app, x86::CPU& cpu,
+ {
+     NFS2_USE(app);
+     NFS2_USE(cpu);
+-    NFS2_USE(cbObjectData);
+-    NFS2_USE(rgdod);
+-    NFS2_USE(pdwInOut);
+-    NFS2_USE(dwFlags);
+-    NFS2_ASSERT(dynamic_cast<Mouse*>(m_resource));
+-    *pdwInOut = 0;
+-    return 0;
++    Mouse* mouse = dynamic_cast<Mouse*>(m_resource);
++    if (!mouse || !pdwInOut || (dwFlags & ~DWORD(1)))
++        return 0x80070057; // E_INVALIDARG
++    app->unlockContext(cpu);
++    const HRESULT result = mouse->getBufferedData(cbObjectData, rgdod, *pdwInOut, (dwFlags & 1) != 0);
++    app->lockContext(cpu);
++    return result;
+ }
+ 
+ HRESULT IDirectInputDevice::SetDataFormat(WinApplication* app, x86::CPU& cpu,
+diff --git a/src/lib/winapi/kernel32.cpp b/src/lib/winapi/kernel32.cpp
+index f94da05..3a5a6b3 100644
+--- a/src/lib/winapi/kernel32.cpp
++++ b/src/lib/winapi/kernel32.cpp
+@@ -555,20 +555,18 @@ DWORD GetLogicalDriveStringsA(WinApplication* app, x86::CPU& cpu,
+ {
+     NFS2_USE(app);
+     NFS2_USE(cpu);
+-    if (nBufferLength)
+-    {
+-        lpBuffer[0] = 'C';
+-        lpBuffer[1] = 'D';
+-        lpBuffer[2] = 0;
+-    }
+-    return 2;
++    static const char drives[] = "C:\\\0D:\\\0";
++    if (nBufferLength < sizeof(drives))
++        return sizeof(drives);
++    memcpy(lpBuffer, drives, sizeof(drives));
++    return sizeof(drives) - 1;
+ }
+ 
+ DWORD GetLogicalDrives(WinApplication* app, x86::CPU& cpu)
+ {
+     NFS2_USE(app);
+     NFS2_USE(cpu);
+-    return 0x2 | 0x4;
++    return (1u << ('C' - 'A')) | (1u << ('D' - 'A'));
+ }
+ 
+ DWORD GetModuleFileNameA(WinApplication* app, x86::CPU& cpu,
+diff --git a/src/lib/winapi/wsock32.cpp b/src/lib/winapi/wsock32.cpp
+index c8f3689..4877661 100644
+--- a/src/lib/winapi/wsock32.cpp
++++ b/src/lib/winapi/wsock32.cpp
+@@ -144,14 +144,14 @@ int bind(WinApplication* app, x86::CPU& cpu,
+     return socket->bind(address, node, port);
+ }
+ 
+-unsigned short htons(WinApplication* app, x86::CPU& cpu, unsigned short hostshort)
++unsigned short (htons)(WinApplication* app, x86::CPU& cpu, unsigned short hostshort)
+ {
+     NFS2_USE(app);
+     NFS2_USE(cpu);
+     return (hostshort >> 8) | (hostshort << 8);
+ }
+ 
+-unsigned short ntohs(WinApplication* app, x86::CPU& cpu, unsigned short netshort)
++unsigned short (ntohs)(WinApplication* app, x86::CPU& cpu, unsigned short netshort)
+ {
+     NFS2_USE(app);
+     NFS2_USE(cpu);
+diff --git a/src/lib/window.cpp b/src/lib/window.cpp
+index 70bc718..b6cde9d 100644
+--- a/src/lib/window.cpp
++++ b/src/lib/window.cpp
+@@ -2,6 +2,7 @@
+ #include <lib/thread.h>
+ #include <SDL3/SDL.h>
+ #include <cstring>
++#include <algorithm>
+ 
+ #define WM_KEYDOWN  0x0100
+ #define WM_KEYUP    0x0101
+@@ -32,6 +33,39 @@ static const x86::reg32 WM_QUIT = 0x0012;
+ static const x86::reg32 WM_USER = 0x0400;
+ static const x86::reg32 WM_USER_END = 0xC000;
+ static WindowClass* s_class;
++static Window* s_mainWindow = nullptr;
++
++static LPARAM mousePosition(SDL_WindowID windowID, float x, float y)
++{
++    struct Request { SDL_WindowID windowID; float x, y; LPARAM result; } request{windowID, x, y, 0};
++    const auto convert = [](void* data) {
++        auto* request = static_cast<Request*>(data);
++        SDL_Window* window = SDL_GetWindowFromID(request->windowID);
++        int width = 0, height = 0;
++        if (!window || !SDL_GetWindowSize(window, &width, &height) || width <= 0 || height <= 0)
++            return;
++        // SDL positions are logical window coordinates; the original frontend
++        // uses a 640x480 canvas inside the same 4:3 viewport as the renderer.
++        const float viewportWidth = std::min(float(width), float(height) * 4.0f / 3.0f);
++        const float viewportHeight = std::min(float(height), float(width) * 3.0f / 4.0f);
++        const int guestX = std::clamp(int((request->x - (width - viewportWidth) / 2) * 640 / viewportWidth), 0, 639);
++        const int guestY = std::clamp(int((request->y - (height - viewportHeight) / 2) * 480 / viewportHeight), 0, 479);
++        request->result = x86::reg32(guestX) | (x86::reg32(guestY) << 16);
++    };
++#ifdef __APPLE__
++    NFS2_ASSERT(SDL_RunOnMainThread(convert, &request, true));
++#else
++    convert(&request);
++#endif
++    return request.result;
++}
++
++static WPARAM mouseButtons(SDL_MouseButtonFlags buttons)
++{
++    return ((buttons & SDL_BUTTON_LMASK) ? 0x1 : 0) |
++           ((buttons & SDL_BUTTON_RMASK) ? 0x2 : 0) |
++           ((buttons & SDL_BUTTON_MMASK) ? 0x10 : 0);
++}
+ 
+ static const x86::reg8 s_scancodeTable[100] =
+ {
+@@ -59,17 +93,37 @@ WindowClass::~WindowClass()
+ }
+ 
+ Window::Window(const char *title, int /*x*/, int /*y*/, int w, int h)
++#ifdef __APPLE__
++    :   m_window(nullptr)
++#else
+     :   m_window(SDL_CreateWindow(title, w, h, SDL_WINDOW_RESIZABLE|SDL_WINDOW_OPENGL))
++#endif
+ {
++#ifdef __APPLE__
++    struct Request { const char* title; int w; int h; SDL_Window* result; } request{title, w, h, nullptr};
++    NFS2_ASSERT(SDL_RunOnMainThread([](void* data) {
++        auto* request = static_cast<Request*>(data);
++        request->result = SDL_CreateWindow(request->title, request->w, request->h,
++                                           SDL_WINDOW_RESIZABLE|SDL_WINDOW_OPENGL);
++        if (request->result)
++            NFS2_ASSERT(SDL_StartTextInput(request->result));
++    }, &request, true));
++    m_window = request.result;
++#endif
++    if (m_window && SDL_IsMainThread() && !SDL_TextInputActive(m_window))
++        NFS2_ASSERT(SDL_StartTextInput(m_window));
+     if (!m_window)
+     {
+         SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Failed to create window: %s", SDL_GetError());
+         return;
+     }
++    s_mainWindow = this;
+ }
+ 
+ Window::~Window()
+ {
++    if (s_mainWindow == this)
++        s_mainWindow = nullptr;
+ }
+ 
+ x86::reg32 Window::getMessage(const x86::CPU& cpu, MSG* result, Window *window, x86::reg32 filterMin, x86::reg32 msgMax)
+@@ -78,11 +132,27 @@ x86::reg32 Window::getMessage(const x86::CPU& cpu, MSG* result, Window *window,
+     NFS2_USE(filterMin);
+     NFS2_USE(msgMax);
+     static LPARAM s_lastLParam;
++    static SDL_MouseButtonFlags s_mouseButtons = 0;
+     memset(result, 0, sizeof(MSG));
+     SDL_Event event;
+     for (;;)
+     {
++#ifdef __APPLE__
++        if (cpu.terminate)
++            return 0;
++        // Pumping Cocoa events is reserved for main(); workers consume the
++        // resulting SDL queue without calling SDL_WaitEvent/SDL_PumpEvents.
++        const int eventCount = SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST);
++        if (eventCount == 0)
++        {
++            SDL_Delay(1);
++            continue;
++        }
++        NFS2_ASSERT(eventCount > 0);
++        if (eventCount > 0)
++#else
+         if (SDL_WaitEvent(&event))
++#endif
+         {
+             if (cpu.terminate)
+                 return 0;
+@@ -116,6 +186,46 @@ x86::reg32 Window::getMessage(const x86::CPU& cpu, MSG* result, Window *window,
+                 case SDL_EVENT_QUIT:
+                     result->message = WM_QUIT;
+                     return 0;
++                case SDL_EVENT_MOUSE_MOTION:
++                    s_mouseButtons = event.motion.state;
++                    result->message = 0x0200; // WM_MOUSEMOVE
++                    result->wParam = mouseButtons(s_mouseButtons);
++                    result->lParam = mousePosition(event.motion.windowID, event.motion.x, event.motion.y);
++                    result->hWindow = window ? window->getResourceIndex() :
++                        (s_mainWindow ? s_mainWindow->getResourceIndex() : event.motion.windowID);
++                    return 1;
++                case SDL_EVENT_MOUSE_BUTTON_DOWN:
++                case SDL_EVENT_MOUSE_BUTTON_UP:
++                    {
++                        const bool down = event.type == SDL_EVENT_MOUSE_BUTTON_DOWN;
++                        const auto mask = SDL_BUTTON_MASK(event.button.button);
++                        if (down) s_mouseButtons |= mask;
++                        else s_mouseButtons &= ~mask;
++                        switch (event.button.button)
++                        {
++                        case SDL_BUTTON_LEFT: result->message = down ? 0x0201 : 0x0202; break;
++                        case SDL_BUTTON_RIGHT: result->message = down ? 0x0204 : 0x0205; break;
++                        case SDL_BUTTON_MIDDLE: result->message = down ? 0x0207 : 0x0208; break;
++                        default: continue;
++                        }
++                        result->wParam = mouseButtons(s_mouseButtons);
++                        result->lParam = mousePosition(event.button.windowID, event.button.x, event.button.y);
++                        result->hWindow = window ? window->getResourceIndex() :
++                            (s_mainWindow ? s_mainWindow->getResourceIndex() : event.button.windowID);
++                    }
++                    return 1;
++                case SDL_EVENT_WINDOW_FOCUS_GAINED:
++                case SDL_EVENT_WINDOW_FOCUS_LOST:
++                    {
++                        const bool focused = event.type == SDL_EVENT_WINDOW_FOCUS_GAINED;
++                        result->hWindow = s_mainWindow ? s_mainWindow->getResourceIndex() : event.window.windowID;
++                        result->message = 0x001c; // WM_ACTIVATEAPP
++                        result->wParam = focused ? 1 : 0;
++                        postMessage(result->hWindow, focused ? 0x0007 : 0x0008, 0, 0);
++                        if (!focused)
++                            s_mouseButtons = 0;
++                    }
++                    return 1;
+                 case SDL_EVENT_KEY_DOWN:
+                 case SDL_EVENT_KEY_UP:
+                     {
+@@ -235,6 +345,17 @@ x86::reg32 Window::getMessage(const x86::CPU& cpu, MSG* result, Window *window,
+ 
+                         if (result->lParam == 1 && scancode < 100)
+                             result->lParam |= s_scancodeTable[scancode] << 16;
++                        if (scancode == SDL_SCANCODE_RIGHT || scancode == SDL_SCANCODE_LEFT ||
++                            scancode == SDL_SCANCODE_DOWN || scancode == SDL_SCANCODE_UP ||
++                            scancode == SDL_SCANCODE_INSERT || scancode == SDL_SCANCODE_DELETE ||
++                            scancode == SDL_SCANCODE_HOME || scancode == SDL_SCANCODE_END ||
++                            scancode == SDL_SCANCODE_PAGEUP || scancode == SDL_SCANCODE_PAGEDOWN ||
++                            scancode == SDL_SCANCODE_KP_ENTER)
++                            result->lParam |= 1u << 24;
++                        if (event.key.repeat)
++                            result->lParam |= 1u << 30;
++                        if (event.type == SDL_EVENT_KEY_UP)
++                            result->lParam |= (1u << 30) | (1u << 31);
+                         s_lastLParam = result->lParam;
+ 
+                         SDL_Event event2;
+@@ -254,6 +375,7 @@ x86::reg32 Window::getMessage(const x86::CPU& cpu, MSG* result, Window *window,
+ 
+                         if (sym >= SDLK_A && sym <= SDLK_Z)
+                             result->wParam = sym & ~0x20;
++                        result->hWindow = s_mainWindow ? s_mainWindow->getResourceIndex() : event.key.windowID;
+                     }
+                     return 1;
+                 case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+@@ -415,9 +537,25 @@ x86::reg32 Window::getMessage(const x86::CPU& cpu, MSG* result, Window *window,
+                     break;
+                 case SDL_EVENT_TEXT_INPUT:
+                     {
++                        if (!event.text.text)
++                            break;
++                        const unsigned char* first = reinterpret_cast<const unsigned char*>(event.text.text);
++                        while (*first && *first < 32) ++first;
++                        if (!*first) break;
+                         result->message = WM_CHAR;
+-                        result->wParam = event.text.text[0];
++                        result->wParam = *first;
+                         result->lParam = s_lastLParam;
++                        result->hWindow = s_mainWindow ? s_mainWindow->getResourceIndex() : event.text.windowID;
++                        for (const unsigned char* text = first + 1;
++                             *text; ++text)
++                        {
++                            if (*text < 32) continue;
++                            SDL_Event character{};
++                            character.type = g_wmCharEvent;
++                            character.user.data1 = reinterpret_cast<void*>(static_cast<uintptr_t>(*text));
++                            character.user.data2 = reinterpret_cast<void*>(static_cast<uintptr_t>(s_lastLParam));
++                            SDL_PushEvent(&character);
++                        }
+                     }
+                     return 1;
+                 default:
+diff --git a/src/nfs2se/disassembly/nfs2se.0.cpp b/src/nfs2se/disassembly/nfs2se.0.cpp
+index be2e2ef..21d0cf2 100644
+--- a/src/nfs2se/disassembly/nfs2se.0.cpp
++++ b/src/nfs2se/disassembly/nfs2se.0.cpp
+@@ -1,5 +1,6 @@
+ #include "nfs2se.h"
+ #include <lib/thread.h>
++#include "cheats.h"
+ 
+ namespace nfs2se
+ {
+@@ -19248,6 +19249,8 @@ L_0x004058f8:
+ /* align: skip 0x00 0x00 0x00 0x00 0x00 0x00 */
+ void Application::sub_405900(WinApplication* app, x86::CPU& cpu)
+ {
++    cheats::frontendTick(app, cpu);
++    if (cpu.terminate) return;
+   NFS2_USE(cpu);
+   NFS2_USE(app);
+     // 00405900  e87b000000             -call 0x405980
+diff --git a/src/nfs2se/disassembly/nfs2se.14.cpp b/src/nfs2se/disassembly/nfs2se.14.cpp
+index 98ea792..71eb7d4 100644
+--- a/src/nfs2se/disassembly/nfs2se.14.cpp
++++ b/src/nfs2se/disassembly/nfs2se.14.cpp
+@@ -1,4 +1,5 @@
+ #include "nfs2se.h"
++#include "cheats.h"
+ #include <lib/thread.h>
+ 
+ namespace nfs2se
+@@ -7691,6 +7692,7 @@ L_0x00470be6:
+ /* align: skip 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 */
+ void Application::sub_470d10(WinApplication* app, x86::CPU& cpu)
+ {
++    cheats::LoadingKeys nativeNightKeys(app, false);
+   NFS2_USE(cpu);
+   NFS2_USE(app);
+     // 00470d10  53                     -push ebx
+diff --git a/src/nfs2se/disassembly/nfs2se.3.cpp b/src/nfs2se/disassembly/nfs2se.3.cpp
+index 27f865b..0c68f5c 100644
+--- a/src/nfs2se/disassembly/nfs2se.3.cpp
++++ b/src/nfs2se/disassembly/nfs2se.3.cpp
+@@ -1,4 +1,5 @@
+ #include "nfs2se.h"
++#include "cheats.h"
+ #include <lib/thread.h>
+ 
+ namespace nfs2se
+@@ -10345,6 +10346,7 @@ L_0x004226e6:
+ /* align: skip  */
+ void Application::sub_422730(WinApplication* app, x86::CPU& cpu)
+ {
++    cheats::frontendClosed();
+   NFS2_USE(cpu);
+   NFS2_USE(app);
+     // 00422730  53                     -push ebx
+@@ -12078,6 +12080,7 @@ void Application::sub_422dc0(WinApplication* app, x86::CPU& cpu)
+ /* align: skip 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 */
+ void Application::main_loop(WinApplication* app, x86::CPU& cpu)
+ {
++    cheats::MoviePlayback nativeMovieGuard;
+   NFS2_USE(cpu);
+   NFS2_USE(app);
+     // 00422dd0  51                     -push ecx
+diff --git a/src/nfs2se/disassembly/nfs2se.6.cpp b/src/nfs2se/disassembly/nfs2se.6.cpp
+index a23647e..2c596a8 100644
+--- a/src/nfs2se/disassembly/nfs2se.6.cpp
++++ b/src/nfs2se/disassembly/nfs2se.6.cpp
+@@ -1,4 +1,5 @@
+ #include "nfs2se.h"
++#include "cheats.h"
+ #include <lib/thread.h>
+ 
+ namespace nfs2se
+@@ -12502,6 +12503,7 @@ L_0x0043930c:
+ /* align: skip 0x00 */
+ void Application::sub_439320(WinApplication* app, x86::CPU& cpu)
+ {
++    cheats::LoadingKeys nativeCameraKeys(app, true);
+   NFS2_USE(cpu);
+   NFS2_USE(app);
+     // 00439320  52                     -push edx
+diff --git a/src/nfs2se/nfs2se_main.cpp b/src/nfs2se/nfs2se_main.cpp
+index ce4ee3b..0b4201c 100644
+--- a/src/nfs2se/nfs2se_main.cpp
++++ b/src/nfs2se/nfs2se_main.cpp
+@@ -2,6 +2,8 @@
+ #include <lib/file.h>
+ #include <nfs2se.h>
+ #include <string>
++#include <atomic>
++#include "cheats.h"
+ 
+ static std::string getExeDirectory(const char* argv0)
+ {
+@@ -16,6 +18,8 @@ static std::string getExeDirectory(const char* argv0)
+ 
+ int main(int argc, char* argv[])
+ {
++    if (SDL_getenv("NFS_DEBUG"))
++        SDL_SetLogPriorities(SDL_LOG_PRIORITY_DEBUG);
+     if (argc >= 3)
+     {
+         win32::File::setDataDirectory(argv[1]);
+@@ -32,10 +36,35 @@ int main(int argc, char* argv[])
+         win32::File::setDataDirectory(exeDir.c_str());
+         win32::File::setCdDirectory(exeDir.c_str());
+     }
+-    SDL_Init(SDL_INIT_EVENTS|SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_JOYSTICK);
++    if (!SDL_Init(SDL_INIT_EVENTS|SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_JOYSTICK))
++    {
++        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL initialization failed: %s", SDL_GetError());
++        return 1;
++    }
+     {
+         nfs2se::Application app(argv[0]);
++#ifdef __APPLE__
++        nfs2se::cheats::installMenu();
++        // The original game creates its UI from a Win32 worker. Cocoa must
++        // create windows and pump events on the process's actual main thread.
++        struct GameRun { nfs2se::Application* app; std::atomic<bool> done{false}; } run{&app};
++        SDL_Thread* game = SDL_CreateThread([](void* data) -> int {
++            auto* run = static_cast<GameRun*>(data);
++            run->app->execute();
++            run->done.store(true);
++            return 0;
++        }, "NFS II SE", &run);
++        NFS2_ASSERT(game);
++        while (!run.done.load())
++        {
++            SDL_PumpEvents();
++            SDL_Delay(1);
++        }
++        SDL_WaitThread(game, nullptr);
++        nfs2se::cheats::shutdownMenu();
++#else
+         app.execute();
++#endif
+     }
+     SDL_Quit();
+     return 0;

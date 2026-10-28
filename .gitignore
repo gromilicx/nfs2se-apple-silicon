@@ -1,0 +1,18 @@
+# Locally fetched upstream repositories, commercial game data, and packages.
+/source/
+/data/
+/build/
+*.app/
+*.app-backup/
+*.zip
+*.exe
+*.EXE
+*.bin
+*.dylib
+*.o
+*.a
+.DS_Store
+__pycache__/
+*.pyc
+.env
+.env.*

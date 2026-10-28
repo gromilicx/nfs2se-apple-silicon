@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-28",
+  "application_version": "1.2",
+  "environment": "Apple Silicon ARM64, macOS 27",
+  "isolated_game_data": true,
+  "live_user_game_interrupted": false,
+  "checks": {
+    "F12_opens_and_closes_panel": true,
+    "initial_row_selection": true,
+    "search_and_details": true,
+    "panel_remains_ready_while_game_loses_focus": true,
+    "FZR_2000_shown_in_original_car_selection": true,
+    "PIONEER_original_confirmation_and_active_status": true,
+    "reset_removes_PIONEER_active_status": true,
+    "night_race_loaded": true,
+    "activation_disabled_during_race": true,
+    "isolated_test_quit_via_Command_Q": true
+  },
+  "automated_test_result": {
+    "passed": 186,
+    "total": 186
+  },
+  "limits": [
+    "Every model and physical effect was not individually driven.",
+    "PIONEER activation and original dialog were exercised visually; engine performance was not measured.",
+    "Nine-camera setup and key restoration were exercised through the original routine in the automated tests; all nine views were not manually compared.",
+    "H turbo and complete record-name entry/persistence remain unverified."
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "scope": "Static audit of special keyboard/name/gameplay triggers in the original software-rendered NFS2SEN executable and generated C++.",
+  "gameplay_verified": false,
+  "source_root": "source/nfs-recompiled/src/nfs2se/disassembly",
+  "entries": [
+    {
+      "id": "night",
+      "guide_trigger": "Hold N while the race loads",
+      "status": "original_trigger_confirmed",
+      "renderer": "software/VGA",
+      "routine": "sub_470d10",
+      "file": "nfs2se.14.cpp",
+      "source_line": 7692,
+      "trigger_read": "0x470d22: byte[0x4c85b5] (keyboard base 0x4c8584 + N scan code 0x31)",
+      "loading_path": [
+        "sub_44f330 calls sub_4719a0 at 0x44f387",
+        "sub_4719a0 loads %sTr%02d.hrz (string 0x4bc680; source tag game/vga/hrzsku.c)",
+        "sub_4719a0 calls sub_470d10 at 0x471bcb"
+      ],
+      "effects": {
+        "sky_rgb": [
+          "0x519580=0",
+          "0x519581=0",
+          "0x519582=0"
+        ],
+        "horizon": [
+          "0x519494=0",
+          "0x519498=0",
+          "0x51949c=12",
+          "0x5194a0=15",
+          "0x5194a4=0",
+          "0x5194a8=80",
+          "0x5194ac=85",
+          "0x5194b0=300",
+          "0x51957c=1"
+        ],
+        "lighting": [
+          "0x517b8c=10",
+          "0x517b90=10",
+          "0x517b94=10",
+          "0x517b98=0",
+          "0x4dc890=2"
+        ]
+      },
+      "menu_operation": "Arm for the next race; temporarily hold the guest N byte only around the original setup routine, then restore the original key byte. Do not patch colors directly.",
+      "note": "No track guard appears in this trigger; no claim of visual verification."
+    },
+    {
+      "id": "extra_cameras",
+      "guide_trigger": "C + B + Right Shift six times before the start and six times again",
+      "status": "original_key_combination_confirmed_guide_repetition_not_found",
+      "routine": "sub_439320",
+      "file": "nfs2se.6.cpp",
+      "source_line": 12503,
+      "trigger_reads": {
+        "C": "0x43934b: byte[0x4c85b2]",
+        "B": "0x439372: byte[0x4c85b4]",
+        "RightShift": "0x439358: byte[0x4c85ba]"
+      },
+      "conditions": "The original camera setup samples held keys; this routine contains no six-press counter.",
+      "loading_calls": [
+        "0x44f167",
+        "0x44f46f"
+      ],
+      "effects": {
+        "default_next_camera_table_source": "0x437d64",
+        "default_next_camera_table": [
+          1,
+          2,
+          3,
+          0,
+          5,
+          6,
+          7,
+          0,
+          0,
+          0,
+          0,
+          0,
+          6
+        ],
+        "runtime_next_camera_table": "0x4dc9f9",
+        "shift_C": "table[3]=4 (0x4394d5)",
+        "shift_B_without_C": "table[3]=8 (0x439596)",
+        "shift_C_and_B": "table[3]=4 and table[7]=8 (0x439589), giving camera cycle 0,1,2,3,4,5,6,7,8,0",
+        "consumer": "0x4380af reads next camera at 0x4dc9f9 + current camera"
+      },
+      "menu_operation": "Arm nine cameras for the next race and temporarily set the three guest keyboard bytes around original sub_439320, restoring prior bytes after the call."
+    },
+    {
+      "id": "heavier_car",
+      "guide_trigger": "Set a track record and enter silspd as the name",
+      "status": "original_name_check_confirmed",
+      "routine": "sub_458e80",
+      "file": "nfs2se.9.cpp",
+      "source_line": 38552,
+      "comparison": "0x459582–0x459597: compare car->driver(+0x21c)->name(+0x34) against exact case-sensitive literal SIL SPD at 0x4bb0fc using strcmp sub_4778f0",
+      "effect": "0x4595a0 shifts car mass at +0xb4 left by 2 (four times normal), before computing inverse mass at +0xb8.",
+      "menu_operation": "Show the original record-name instruction. The typed frontend cheat handler does not recognize silspd; no global unlock flag was found.",
+      "caveat": "Comparison is byte-exact and requires uppercase SIL SPD including the space. Driver-name formatting/record entry conversion and persistence were not run-tested; the guide silspd cannot be assumed to match."
+    },
+    {
+      "id": "drive_through_barriers",
+      "guide_trigger": "Simulation, McLaren F1, Mediterraneo/Mystic Peaks; reverse while sounding horn, hit a movable object, then hit a barrier fast",
+      "status": "original_collision_secret_confirmed_with_more_specific_conditions",
+      "activation_routine": "sub_440a80",
+      "activation_file": "nfs2se.7.cpp",
+      "activation_source_line": 7423,
+      "activation_conditions": [
+        "0x440b3b reads horn state car+0x2dd (either colliding car may be sounding horn)",
+        "0x440b51/0x440bcf require runtime track ID 6 or 7 in dword[0x4dd2fc]",
+        "0x440b5a/0x440b82 require player-car flag 0x04 at car+0x1f4 and the other object flag 0x40",
+        "0x440b6c/0x440b94 require longitudinal velocity car+0x2b8 < -0x000a0000"
+      ],
+      "activation_effect": "0x440b78/0x440ba0 set global dword[0x4c5880]=1",
+      "consumer_routine": "sub_456b20",
+      "consumer_file": "nfs2se.9.cpp",
+      "consumer_source_line": 29827,
+      "consumer_conditions": [
+        "0x456f2f player-car flag 0x04",
+        "0x456f3c global 0x4c5880 != 0",
+        "0x456f49 approximate horizontal speed car+0xbc > 0x002ca3d7",
+        "Track 6 requires current segment car+0x14 inside (0x168,0x426) or (0x488,0x649)",
+        "Track 7 requires current segment inside (0x4b0,0x6b9)"
+      ],
+      "consumer_effect": "Uses collision type 7 and the original jump path; this is not universal collision disabling.",
+      "resets": [
+        "0x43c792",
+        "0x457df2",
+        "0x457e2c"
+      ],
+      "menu_operation": "Help/instructions only; retain original collision and track conditions.",
+      "caveat": "No explicit McLaren model check appears in the identified activation/consumer blocks. The guide speed claims were not confirmed; executable uses the exact internal thresholds recorded here. No gameplay validation."
+    },
+    {
+      "id": "turbo_H",
+      "guide_trigger": "Hold H during a race",
+      "status": "unverified_as_described",
+      "evidence": [
+        "Keyboard getter sub_47a470 reads scan-code array 0x4c8584. Direct H/0x23 polling at 0x434090 and 0x4347f4 has no boost state use in the surrounding code.",
+        "Horn input is car+0x2dd (set from control bit4 at 0x44551b).",
+        "In slot physics sub_450370, 0x450575 checks horn while car+0x318 is set, then clears car+0x318 and starts car+0x31c=1. sub_450330 restores car+0x318 after this counter exceeds0x80. This is slot-related behavior, not proof of a universal H turbo."
+      ],
+      "menu_operation": "Mark the screenshot claim unverified and avoid a button that promises an unsupported boost.",
+      "caveat": "Absence of a direct key check is not proof no input-bound gameplay behavior exists; no claim of exhaustive dynamic test."
+    },
+    {
+      "id": "mad",
+      "status": "accepted_but_no_effect_in_software_executable",
+      "evidence": "Encoded typed-table index7 dispatches to common continuation 0x404e8a, with no effect or acceptance sound; see cheats-audit-typed.json.",
+      "menu_operation": "Show as unavailable for this renderer; guide identifies it as a 3Dfx effect."
+    },
+    {
+      "id": "kcjones",
+      "status": "accepted_but_no_effect_in_software_executable",
+      "evidence": "Encoded typed-table index10 dispatches to common continuation 0x404e8a, with no effect or acceptance sound; see cheats-audit-typed.json.",
+      "menu_operation": "Show as unavailable for this renderer; guide identifies it as a 3Dfx effect."
+    },
+    {
+      "id": "rain",
+      "status": "typed_trigger_and_runtime_track_conditions_confirmed_by_catalog_agent",
+      "evidence": "See cheats-audit-typed.json: runtime flag byte[0x4dd2f8] bit0x40, renderer guards permit runtime trackIDs0,5,7 (Proving Grounds, North Country, Mystic Peaks).",
+      "menu_operation": "Enable as a typed cheat with the exact supported-track note. The screenshot omits North Country."
+    }
+  ],
+  "frontend_phase_guard": {
+    "candidate": "Both guest dword[0x4d58b8] and dword[0x4d58bc] are nonzero AND host execution is outside scoped movie playback main_loop0x422dd0.",
+    "evidence": [
+      "sub_422990 (nfs2se.3.cpp:11124) allocates menu canvas pointers at0x4229ec and0x422a09.",
+      "Only caller of sub_422990 is frontend menu init sub_410ed0, call0x410efb.",
+      "sub_422730 (nfs2se.3.cpp:10346) clears both pointers at0x422753 and0x422784.",
+      "Frontend wrapper sub_408340 calls cleanup0x422730 at0x408491 before returning into race builder sub_44f0d0.",
+      "All static references to these pointers are confined to frontend menu draw/build/cleanup code0x4225xx–0x422a09."
+    ],
+    "do_not_use": [
+      "0x4dde89 is communication mode;0x4dde8a is race type, not frontend/race phase.",
+      "Generated main_loop0x422dd0 is movie playback and calls shared sub_405900 typed-cheat input.",
+      "0x4c82b4 is a timer callback and persists, unsuitable as a phase flag."
+    ],
+    "validation": "Read-only runtime phase verification still required by root before adopting this guard.",
+    "limitations": [
+      "Frontend menu canvas pointers can remain allocated while Showroom car videos play: sub_40d5c0 initializes the menu via sub_410ed0 at0x40d69d, then calls movie playback at0x40d993 without cleanup0x422730. Therefore pointers alone do not exclude every video.",
+      "A host scoped movie-depth counter around generated main_loop0x422dd0 can cleanly exclude movie playback."
+    ]
+  },
+  "automated_verification": {
+    "typed_codes": "Use original Application + public WinApplication runThread/dynamic_call on0x404df4 with guest CPU stack and EAX=character; assert exact bytes/dwords before/after, selected-car indices, toggling and guard rejection. This verifies executable state effects, not visible driving/render results.",
+    "night": "Original sub_470d10 has only memory/math effects, including sub_469490 and sub_433530 which are simple global writes. Test N=1 exact output globals. For N=0 initialize valid horizon ranges (or run N=1 first); all-zero ranges may divide by zero in interpolation.",
+    "cameras": "Original sub_439320 has only memory effects. Allocate a zeroed fake car of at least0x684 bytes, store its guest pointer at0x4dcde8; use0x4dd2e8=0,0x4dd2ec=0,0x4dd2d8=0,0x4dd308=0. Test held-key permutations and next-camera table0x4dc9f9. The call to sub_4368d0 only stores two globals.",
+    "heavier_and_barrier": "Use the exact static predicates above as documentation; full routine execution needs more race structures and may be outside this task. Do not report these as gameplay-tested."
+  }
+}
