@@ -53,3 +53,13 @@ The original nine-camera setup was executed in tests, but all nine views were no
 manually compared. H turbo and full record-name entry/persistence are unverified.
 Network play is not supported. These results describe the tested configuration,
 not every Apple Silicon Mac or OS version.
+
+## Publication reproducibility check
+
+Before publication, a fresh local clone of this repository fetched both pinned
+upstreams and applied the patch/overlay successfully. Repeating setup was also
+successful. The documented extraction command, using the locally supplied ZIP,
+then completed, followed by a full ARM64 build, app packaging/signature checks,
+and another **186/186** passing isolated test run. Commercial inputs and generated
+apps stayed in ignored local directories. Toolchain details and the tested source
+commit are recorded in [publication-check.json](publication-check.json).

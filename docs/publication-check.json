@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-28",
+  "tested_source_commit": "3ca584a4738682296266fff141125357f0742160",
+  "method": "Fresh local clone of the publishable repository, freshly fetched pinned upstream revisions, then documented extraction/build/test commands.",
+  "checks": {
+    "fresh_setup": true,
+    "repeat_setup": true,
+    "supplied_zip_extraction": true,
+    "arm64_runtime_and_launcher_build": true,
+    "app_packaging_and_codesign_verification": true,
+    "isolated_tests_passed": 186,
+    "isolated_tests_total": 186,
+    "recorded_test_results_reproduced": true
+  },
+  "toolchain": {
+    "architecture": "arm64",
+    "macos": "27.0",
+    "clang": "Apple clang version 21.0.0 (clang-2100.3.34.2)",
+    "cmake": "cmake version 4.3.4",
+    "sdl3": "3.4.10"
+  },
+  "publication_contents": "Port source additions, a textual upstream patch, scripts, tests, and documentation only. No game assets or built app uploaded."
+}
